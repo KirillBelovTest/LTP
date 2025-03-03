@@ -1,20 +1,13 @@
 (* ::Package:: *)
 
-
-Once[Map[If[Length[PacletFind[#]] === 0, PacletInstall[#]]&][{
-	"KirillBelov/CSockets", 
-    "KirillBelov/Internal", 
-	"KirillBelov/Objects",  
-	"KirillBelov/TCP"
-}]]; 
+Once[
+    If[Length[PacletFind["KirillBelov/Objects"]] === 0, 
+        PacletInstall["KirillBelov/Objects"]
+    ]
+]; 
 
 
-BeginPackage["KirillBelov`LTP`", {
-    "KirillBelov`CSockets`", 
-    "KirillBelov`Internal`", 
-    "KirillBelov`Objects`", 
-	"KirillBelov`TCP`"
-}]; 
+BeginPackage["KirillBelov`LTP`", {"KirillBelov`Objects`", "JLink`"}]; 
 
 
 LTPPacketQ::usage = 
@@ -33,10 +26,6 @@ LTPSend::usage =
 "LTPSend[client, message] send LTP message."; 
 
 
-$LTPServer::usage = 
-$LTPServer; 
-
-
 Begin["`Private`"]; 
 
 
@@ -48,7 +37,7 @@ With[{data = packet["DataByteArray"]},
 
 
 LTPPacketLength[packet_Association] := 
-8 + ImportByteArray[packet["DataByteArray"][[5 ;; 8]], "UnsignedInteger32", ByteOrdering -> 1][[1]]; 
+ImportByteArray[packet["DataByteArray"][[5 ;; 8]], "UnsignedInteger32", ByteOrdering -> 1][[1]]; 
 
 
 CreateType[LTPHandler, {
@@ -60,7 +49,7 @@ CreateType[LTPHandler, {
 }]; 
 
 
-handler_LTPHandler[packet_Association] := 
+(handler_LTPHandler)[packet_Association] := 
 With[{
     serializer = handler["Serializer"], 
     destination = handler["Destination"], 
@@ -71,22 +60,12 @@ With[{
             Which[
                 destination === Automatic, 
                     LTPSend[packet["SourceSocket"], result, "Serializer" -> serializer], 
-                IntegerQ[destination], 
-                    handler["Destination"] = CSocketConnect[destination]; 
-                    LTPSend[handler["Destination"], result, "Serializer" -> serializer], 
-                Head[destination] === CSocketObject, 
+                True, 
                     LTPSend[destination, result, "Serializer" -> serializer]
             ]
         ]
     ]
 ]; 
-
-
-LTPHandler /: AddTo[tcp_, ltp_LTPHandler] := (
-    tcp["CompleteHandler", "LTP"] = LTPPacketQ -> LTPPacketLength; 
-    tcp["MessageHandler", "LTP"] = LTPPacketQ -> ltp; 
-    tcp
-);
 
 
 Options[LTPSend] = {
@@ -104,92 +83,16 @@ With[{serializer = OptionValue["Serializer"]},
 ]; 
 
 
-SetAttributes[LTPEvaluate, HoldRest];
+$directory = DirectoryName[$InputFileName, 2]; 
 
-
-Options[LTPEvaluate] = Options[LTPSend]; 
-
-
-LTPEvaluate[kernel_LTPKernelObject, code_] := 
-LTPSend[kernel["Client"], Hold[code], "Serializer" -> kernel["Serializer"]]; 
-
-
-CreateType[LTPKernelObject, {
-    "Port", 
-    "Destination", 
-    "Link", 
-    "Client", 
-    "Serializer" -> BinarySerialize, 
-    "Deserializer" -> BinaryDeserialize, 
-    "Running" -> False
-}]; 
-
-
-linkWaitRead[link_LinkObject] := 
-TimeConstrained[While[!LinkReadyQ[link], Pause[0.001]], 10]; 
-
-
-linkWaitWrite[link_LinkObject?LinkReadyQ, entry: True | False: False] := 
-If[entry, 
-    Block[{$RecursionLimit = 20}, 
-        If[Head[LinkRead[link]] === InputNamePacket && Not[LinkReadyQ[link]], 
-            Null, 
-            Pause[0.001]; 
-            linkWaitWrite[link]
-        ]
-    ], 
-    If[Head[LinkRead[link]] === InputNamePacket && Not[LinkReadyQ[link]], 
-        Null, 
-        Pause[0.001]; 
-        linkWaitWrite[link]
-    ]
-]; 
-
-
-LTPKernelLaunch[port_Integer?Positive, destination_Integer?Positive] := 
-With[{kernel = LTPKernelObject[], link = LinkLaunch[First[$CommandLine] <> " -wstp"]}, 
-    kernel["Port"] = port; 
-    kernel["Destination"] = destination; 
-    kernel["Link"] = link; 
-    
-    linkWaitRead[link]; 
-    linkWaitWrite[link, True]; 
-    LinkWrite[link, Unevaluated[EnterExpressionPacket[
-        Get["KirillBelov`CSockets`"]; 
-        Get["KirillBelov`Objects`"]; 
-        Get["KirillBelov`TCPServer`"]; 
-        Get["KirillBelov`LTP`"]; 
-    ]]]; 
-
-    linkWaitRead[link]; 
-    linkWaitWrite[link, True]; 
-    LinkWrite[link, Unevaluated[EnterExpressionPacket[
-        KirillBelov`LTP`LTPKernelCreate[port, destination]; 
-    ]]]; 
-
-    linkWaitRead[link]; 
-    linkWaitWrite[link, True]; 
-
-    kernel["Client"] = CSocketConnect[port]; 
-
-    kernel
-]; 
-
-
-LTPKernelCreate[port_Integer?Positive, destination_Integer?Positive] := 
-With[{tcp = TCPServer[], ltp = LTPHandler[]}, 
-    tcp += ltp; 
-    ltp["Destination"] = destination; 
-    SocketListen[CSocketOpen[port], tcp@Echo@#&]; 
-]; 
-
-
-LTPKernelObject /: Close[kernel_LTPKernelObject] := (
-    Close[kernel["Client"]]
-    LinkClose[kernel["Link"]]; 
-); 
 
 $head = StringToByteArray["LTP#"]; 
+
+
+Map[AddToClassPath] @ 
+Map[Last] @ 
+GroupBy[StringRiffle[StringSplit[#, "-"][[;; -2]], "-"]&] @ 
+FileNames["*.jar", {FileNameJoin[{$directory, "Java"}]}]; 
 
 
 End[];
