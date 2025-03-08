@@ -1,12 +1,5 @@
 (* ::Package:: *)
 
-Once[
-    If[Length[PacletFind["KirillBelov/Objects"]] === 0, 
-        PacletInstall["KirillBelov/Objects"]
-    ]
-]; 
-
-
 BeginPackage["KirillBelov`LTP`", {"KirillBelov`Objects`", "JLink`"}]; 
 
 
@@ -49,7 +42,7 @@ CreateType[LTPHandler, {
 }]; 
 
 
-(handler_LTPHandler)[packet_Association] := 
+LTPHandler /: (handler_LTPHandler)[packet_Association] := 
 With[{
     serializer = handler["Serializer"], 
     destination = handler["Destination"], 
