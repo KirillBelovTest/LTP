@@ -19,6 +19,14 @@ PacletObject[
         "Documentation",
         "Root" -> "Documentation",
         "Language" -> "English"
+      }, 
+      {
+        "Asset",
+        "Assets" -> {
+          {"License", "./LICENSE"},
+          {"ReadMe", "./README.md"},
+          {"Java", "./Java"}
+        }
       }
     }
   |>

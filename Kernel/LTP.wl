@@ -38,7 +38,7 @@ CreateType[LTPHandler, {
     "Destination" -> Automatic,  
     "Deserializer" -> BinaryDeserialize, 
     "Serializer" -> BinarySerialize, 
-    "MessageHandler" -> ReleaseHold
+    "Handler" -> ReleaseHold
 }]; 
 
 
@@ -48,7 +48,7 @@ With[{
     destination = handler["Destination"], 
     data = packet["DataByteArray"]
 }, 
-    Module[{result = handler["MessageHandler"][handler["Deserializer"][data[[9 ;; ]]]]}, 
+    Module[{result = handler["Handler"][handler["Deserializer"][data[[9 ;; ]]]]}, 
         If[handler["Responsible"], 
             Which[
                 destination === Automatic, 
