@@ -92,7 +92,7 @@ public class LTPClient {
      * @param data The payload data to be transmitted as a byte array.
      * @throws IOException If an I/O error occurs during communication with the socket.
      */
-    public void sendMessage(byte[] data) throws IOException {
+    public void send(byte[] data) throws IOException {
         // Calculate the total length of the message, including the 8-byte header (4 bytes for "LTP#" + 4 bytes for length)
         int totalLength = data.length + 8;
 
@@ -134,12 +134,12 @@ public class LTPClient {
      * @param message The string message to be sent (e.g., "Hello, LTP!").
      * @throws IOException If an I/O error occurs during communication with the socket.
      */
-    public void sendMessage(String message) throws IOException {
+    public void send(String message) throws IOException {
         // Convert the input string to a byte array using UTF-8 encoding
         byte[] data = message.getBytes(StandardCharsets.UTF_8);
 
-        // Delegate to the byte-array version of sendMessage to handle the transmission
-        sendMessage(data);
+        // Delegate to the byte-array version of send to handle the transmission
+        send(data);
     }
 
     /**
@@ -162,7 +162,7 @@ public class LTPClient {
             String message = "Hello, LTP!";
 
             // Send the message using the LTP protocol
-            client.sendMessage(message);
+            client.send(message);
 
             // Print a confirmation message to the console if sending is successful
             System.out.println("Message successfully sent using LTP protocol");

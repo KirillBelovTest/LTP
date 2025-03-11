@@ -1,5 +1,18 @@
 (* ::Package:: *)
 
+Once[
+    If[PacletFind["KirillBelov/Objects"] === {}, 
+        PacletInstall["KirillBelov/Objects"]
+    ]
+]; 
+
+Once[
+    If[PacletFind["KirillBelov/CSockets"] === {}, 
+        PacletInstall["KirillBelov/CSockets"]
+    ]
+]; 
+
+
 BeginPackage["KirillBelov`LTP`", {"KirillBelov`Objects`", "JLink`"}]; 
 
 
@@ -70,7 +83,7 @@ LTPSend[client_, message_, OptionsPattern[]] :=
 With[{serializer = OptionValue["Serializer"]}, 
     Module[{len, data}, 
         data = serializer[message]; 
-        len = ExportByteArray[Length[data], "UnsignedInteger32", ByteOrdering -> 1]; 
+        len = ExportByteArray[Length[data] + 8, "UnsignedInteger32", ByteOrdering -> 1]; 
         BinaryWrite[client, Join[$head, len, data]]; 
     ]; 
 ]; 

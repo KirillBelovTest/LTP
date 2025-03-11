@@ -40,7 +40,7 @@ ltpHandler["Responsible"] = False;
 ltpHandler["Deserializer"] = ByteArrayToString; 
 ltpHandler["Handler"] = Echo; 
 
-listener = CSocketListen[serverSocket, socketHandler];
+listener = SocketListen[serverSocket, socketHandler];
 ```
 
 ## Wolfram Client
