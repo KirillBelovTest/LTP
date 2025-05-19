@@ -61,6 +61,7 @@ With[{
     destination = handler["Destination"], 
     data = packet["DataByteArray"]
 }, 
+    Echo[packet, "LTP Packet"];
     Module[{result = handler["Handler"][handler["Deserializer"][data[[9 ;; ]]]]}, 
         If[handler["Responsible"], 
             Which[
