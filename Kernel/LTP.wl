@@ -13,7 +13,12 @@ Once[
 ]; 
 
 
-BeginPackage["KirillBelov`LTP`", {"KirillBelov`Objects`", "JLink`"}]; 
+BeginPackage["KirillBelov`LTP`", {
+    "KirillBelov`Objects`", 
+    "JLink`", 
+    "KirillBelov`CSockets`TCP`", 
+    "KirillBelov`CSockets`Handler`"
+}]; 
 
 
 LTPPacketQ::usage = 
@@ -30,6 +35,10 @@ LTPHandler::usage =
 
 LTPSend::usage = 
 "LTPSend[client, message] send LTP message."; 
+
+
+LTPListen::usage = 
+"LTPListen[port, handler] cretes default socket listener that can handle LTP events using specifiyed handler."; 
 
 
 Begin["`Private`"]; 
@@ -87,6 +96,38 @@ With[{serializer = OptionValue["Serializer"]},
         BinaryWrite[client, Join[$head, len, data]]; 
     ]; 
 ]; 
+
+
+Options[LTPListen] = {
+    "Port" -> Automatic, 
+    "Responsible" -> True, 
+    "Destination" -> Automatic,  
+    "Deserializer" -> BinaryDeserialize, 
+    "Serializer" -> BinarySerialize
+};
+
+
+LTPListen[handler_, opts: OptionsPattern[]] := 
+With[{
+    ltp = LTPHandler @@ DeleteCases[Flatten[{opts, "Handler" -> handler}], _["Port", _]], 
+    port = If[OptionValue["Port"] === Automatic, RandomInteger[{20000, 60000}], OptionValue["Port"]]
+}, 
+    With[{
+        listenHandler = CSocketHandler[
+            "Accumulator" -> <|"LTP" -> LTPPacketQ -> LTPPacketLength|>, 
+            "Handler" -> <|"LTP" -> LTPPacketQ -> ltp|>
+        ],  
+        listenSocket = CSocketOpen[port]
+    }, 
+        With[{listener = SocketListen[listenSocket, listenHandler]}, <|
+            "ListenPort" -> port, 
+            "ListenHandler" -> listenHandler, 
+            "ListenSocket" -> listenSocket, 
+            "Listener" -> listener, 
+            "LTPHandler" -> ltp
+        |>]
+    ]
+];
 
 
 $directory = DirectoryName[$InputFileName, 2]; 
